@@ -43,22 +43,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [name, setName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [captcha, setCaptcha] = useState(null);
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [authError, setAuthError] = useState('');
-
-  const loadCaptcha = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/auth/captcha');
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Could not load captcha');
-      setCaptcha(data);
-      setCaptchaAnswer('');
-    } catch (err) {
-      setCaptcha(null);
-      setAuthError(`Captcha unavailable: ${err.message}. Start the backend server first.`);
-    }
-  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -74,9 +59,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'signup') {
-      loadCaptcha();
-    }
     if (isOpen) {
       setAuthError('');
       
@@ -107,7 +89,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       const endpoint = activeTab === 'signin' ? '/api/auth/signin' : '/api/auth/signup';
       const body = activeTab === 'signin' 
         ? { email, password } 
-        : { name, email, password, captcha_id: captcha?.captcha_id || '', captcha_answer: captchaAnswer };
+        : { name, email, password };
 
       const response = await fetch(`http://localhost:8000${endpoint}`, {
         method: 'POST',
@@ -137,16 +119,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       onClose();
     } catch (err) {
       setAuthError(err.message || 'Authentication failed.');
-      if (activeTab === 'signup') {
-        loadCaptcha();
-      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSocialAuth = (provider) => {
-    setAuthError(`${provider} login is not enabled yet. Please sign up with your real name, email, password, and captcha.`);
+    setAuthError(`${provider} login is not enabled yet. Please sign up with your real name, email, and password.`);
   };
 
   const handleForgotPassword = async (e) => {
@@ -361,32 +340,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     </label>
                   </div>
                 </>
-              )}
-
-              {activeTab === 'signup' && (
-                <div className="authField">
-                  <label htmlFor="auth-captcha">Captcha Verification</label>
-                  <div className="authCaptchaRow">
-                    <div className="authCaptchaQuestion">
-                      <ShieldCheck size={16} />
-                      <span>{captcha?.question || 'Loading captcha...'}</span>
-                    </div>
-                    <button type="button" className="authCaptchaRefresh" onClick={loadCaptcha} aria-label="Refresh captcha">
-                      <RefreshCw size={15} />
-                    </button>
-                  </div>
-                  <div className="authInputWrapper">
-                    <input
-                      id="auth-captcha"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter captcha answer"
-                      value={captchaAnswer}
-                      onChange={(e) => setCaptchaAnswer(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
               )}
 
               {authError && <div className="authErrorMessage">{authError}</div>}

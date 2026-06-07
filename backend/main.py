@@ -119,8 +119,6 @@ class UserSignUp(BaseModel):
     name: str
     email: str
     password: str
-    captcha_id: str
-    captcha_answer: str
 
 
 class UserSignIn(BaseModel):
@@ -534,7 +532,6 @@ def signup(payload: UserSignUp):
     name  = validate_name(payload.name)
     email = validate_email(payload.email)
     validate_password(payload.password)
-    verify_captcha(payload.captcha_id, payload.captcha_answer)
 
     conn   = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
