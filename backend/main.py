@@ -264,7 +264,7 @@ def get_db():
     return conn
 
 
-def get_user_by_email(email: str):
+def get_user_id_by_email(email: str):
     """Get user ID by email. Returns user_id or raises 404 if not found."""
     conn = get_db()
     try:
@@ -794,7 +794,7 @@ def get_user_stats(user_id: int):
 def get_user_stats_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
 
         pred = conn.execute("""
             SELECT
@@ -864,7 +864,7 @@ def get_predictions(user_id: int):
 def get_predictions_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         rows = conn.execute("""
             SELECT id, predicted_price, predicted_age, dna_score,
@@ -917,7 +917,7 @@ def save_prediction(user_id: int, payload: SavePredictionRequest):
 def save_prediction_by_email(email: str, payload: SavePredictionRequest):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1022,7 +1022,7 @@ def get_portfolio(user_id: int):
 def get_portfolio_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         rows = conn.execute("""
             SELECT id, property_name, city, state, country, predicted_price, dna_score, notes,
@@ -1073,7 +1073,7 @@ def add_portfolio(user_id: int, payload: PortfolioAddRequest):
 def add_portfolio_by_email(email: str, payload: PortfolioAddRequest):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1123,7 +1123,7 @@ def delete_portfolio(user_id: int, item_id: int):
 def delete_portfolio_by_email(email: str, item_id: int):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1169,7 +1169,7 @@ def get_favorites(user_id: int):
 def get_favorites_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         rows = conn.execute("""
             SELECT id, city, state, country, dna_score, predicted_price, created_at
@@ -1211,7 +1211,7 @@ def add_favorite(user_id: int, payload: FavoriteAddRequest):
 def add_favorite_by_email(email: str, payload: FavoriteAddRequest):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1254,7 +1254,7 @@ def delete_favorite(user_id: int, item_id: int):
 def delete_favorite_by_email(email: str, item_id: int):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1301,7 +1301,7 @@ def get_reports(user_id: int):
 def get_reports_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         rows = conn.execute("""
             SELECT id, report_name, country, state, city,
@@ -1345,7 +1345,7 @@ def save_report(user_id: int, payload: ReportSaveRequest):
 def save_report_by_email(email: str, payload: ReportSaveRequest):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1389,7 +1389,7 @@ def delete_report(user_id: int, item_id: int):
 def delete_report_by_email(email: str, item_id: int):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1431,7 +1431,7 @@ def reset_user_data(user_id: int):
 def reset_user_data_by_email(email: str):
     conn = get_db()
     try:
-        user_id = get_user_by_email(email)
+        user_id = get_user_id_by_email(email)
         
         cursor = conn.cursor()
         cursor.execute("DELETE FROM saved_predictions WHERE user_id = ?", (user_id,))
