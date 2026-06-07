@@ -1,0 +1,43 @@
+PRICE_FEATURES = [
+    "Country",
+    "State_Region",
+    "City",
+    "Postal_Code",
+    "Latitude",
+    "Longitude",
+    "Year_Built",
+    "House_Age",
+    "Property_Type",
+    "House_Size_sqft",
+    "Lot_Size_sqft",
+    "Bedrooms",
+    "Bathrooms",
+    "Floors",
+    "Garage_Size",
+    "Garden_Area",
+    "Swimming_Pool",
+    "Elevator",
+    "Construction_Material",
+    "Roof_Type",
+    "Energy_Rating",
+    "Renovation_Year",
+    "Renovation_Count",
+    "Distance_to_School_km",
+    "Distance_to_Hospital_km",
+    "Distance_to_City_Center_km",
+    "Crime_Index",
+    "Market_Demand_Score",
+    "Neighborhood_Rating",
+    "Internet_Speed_Availability",
+    "Public_Transport_Score",
+    "Flood_Risk",
+    "Earthquake_Risk",
+    "Air_Quality_Index",
+    "Noise_Level",
+    "Future_Growth_Score",
+    "Investment_Rating"
+]
+
+PRICE_TARGET = "House_Price"
+
+DNA_TARGET = "PropertyDNA_Score"
