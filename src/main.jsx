@@ -17,7 +17,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard.jsx';
 import './styles.css';
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const API = import.meta.env.VITE_API_BASE_URL || "https://propertydna.onrender.com";
 
 // ──────────────────────────────────────────────
 // Default form — all 37 model features

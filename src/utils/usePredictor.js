@@ -3,7 +3,7 @@ import { CURRENT_YEAR, countries } from "./constants.js";
 import { notifyBackendRefresh } from "./useBackendRefresh.js";
 import { addPortfolioByEmail } from "./api.js";
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_BASE_URL || "https://propertydna.onrender.com";
 
 export const DEFAULT_FORM = {
   Country: "India",

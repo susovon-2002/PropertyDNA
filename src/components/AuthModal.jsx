@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Clock, Home, TrendingUp, User, X, RefreshCw } from 'lucide-react';
 
+const API = import.meta.env.VITE_API_BASE_URL || "https://propertydna.onrender.com";
+
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -91,7 +93,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         ? { email, password } 
         : { name, email, password };
 
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${API}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -136,7 +138,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/forgot-password', {
+      const response = await fetch(`${API}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
