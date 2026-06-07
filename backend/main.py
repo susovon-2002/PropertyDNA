@@ -219,10 +219,8 @@ def validate_name(name: str) -> str:
 def validate_email(email: str) -> str:
     cleaned = normalize_email(email)
     if not EMAIL_RE.match(cleaned):
-        raise HTTPException(status_code=422, detail="Incorrect details provided. Email must be a valid Gmail address ending with @gmail.com.")
+        raise HTTPException(status_code=422, detail="Incorrect details provided. Email must be a valid email address.")
     domain = cleaned.rsplit("@", 1)[1]
-    if domain != "gmail.com":
-        raise HTTPException(status_code=422, detail="Incorrect details provided. Only @gmail.com email addresses are allowed.")
     if domain in DISPOSABLE_EMAIL_DOMAINS or domain.endswith(".test") or domain.endswith(".invalid"):
         raise HTTPException(status_code=422, detail="Incorrect details provided. Temporary or fake email addresses are not allowed.")
     return cleaned
@@ -268,11 +266,16 @@ def get_user_id_by_email(email: str):
     """Get user ID by email. Returns user_id or raises 404 if not found."""
     conn = get_db()
     try:
+        print(f"[DEBUG] get_user_id_by_email called with: {email}")
         email = validate_email(email)
+        print(f"[DEBUG] Email after validation: {email}")
         user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        print(f"[DEBUG] User query result: {user}")
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        return user["id"]
+        user_id = user["id"]
+        print(f"[DEBUG] Returning user_id: {user_id}")
+        return user_id
     finally:
         conn.close()
 
@@ -864,7 +867,9 @@ def get_predictions(user_id: int):
 def get_predictions_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] Fetching predictions for email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] Found user_id: {user_id}")
         
         rows = conn.execute("""
             SELECT id, predicted_price, predicted_age, dna_score,
@@ -873,10 +878,14 @@ def get_predictions_by_email(email: str):
             WHERE user_id = ?
             ORDER BY created_at DESC
         """, (user_id,)).fetchall()
-        return [dict(r) for r in rows]
+        print(f"[DEBUG] Found {len(rows)} predictions for user_id {user_id}")
+        result = [dict(r) for r in rows]
+        print(f"[DEBUG] Returning predictions: {result}")
+        return result
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[DEBUG] Error fetching predictions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         conn.close()
@@ -917,7 +926,9 @@ def save_prediction(user_id: int, payload: SavePredictionRequest):
 def save_prediction_by_email(email: str, payload: SavePredictionRequest):
     conn = get_db()
     try:
+        print(f"[DEBUG] Saving prediction for email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] Found user_id: {user_id}")
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -935,10 +946,13 @@ def save_prediction_by_email(email: str, payload: SavePredictionRequest):
             payload.material or "", payload.location or "", payload.renovation or ""
         ))
         conn.commit()
-        return {"status": "success", "prediction_id": cursor.lastrowid}
+        prediction_id = cursor.lastrowid
+        print(f"[DEBUG] Prediction inserted with ID: {prediction_id}")
+        return {"status": "success", "prediction_id": prediction_id}
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[DEBUG] Error saving prediction: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save prediction: {str(e)}")
     finally:
         conn.close()
