@@ -1118,6 +1118,19 @@ async def upload_csv(background_tasks: BackgroundTasks, file: UploadFile = File(
         raise HTTPException(status_code=500, detail=f"File saving error: {str(e)}")
 
 
+@app.get("/debug/users")
+def debug_users():
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, name, email FROM users ORDER BY id DESC"
+        ).fetchall()
+
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
