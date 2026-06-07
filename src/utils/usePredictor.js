@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { CURRENT_YEAR, countries } from "./constants.js";
 import { notifyBackendRefresh } from "./useBackendRefresh.js";
-import { addPortfolio } from "./api.js";
+import { addPortfolioByEmail } from "./api.js";
 
 const API = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -126,9 +126,9 @@ export function usePredictor(user, { onNotify } = {}) {
     [form.Year_Built],
   );
 
-  const fetchPredictions = useCallback(async (userId) => {
+  const fetchPredictions = useCallback(async (userEmail) => {
     try {
-      const res = await fetch(`${API}/api/user/${userId}/predictions`);
+      const res = await fetch(`${API}/api/user/by-email/${userEmail}/predictions`);
       if (res.ok) setSavedPredictions(await res.json());
     } catch (err) {
       console.error("Failed to fetch predictions:", err);
@@ -145,7 +145,7 @@ export function usePredictor(user, { onNotify } = {}) {
             setIsTraining(false);
             clearInterval(interval);
             onNotify?.("ML models retrained successfully!", "success");
-            if (user) fetchPredictions(user.id);
+            if (user) fetchPredictions(user.email);
           }
         }
       } catch (err) {
@@ -156,7 +156,7 @@ export function usePredictor(user, { onNotify } = {}) {
 
   useEffect(() => {
     if (user) {
-      fetchPredictions(user.id);
+      fetchPredictions(user.email);
       fetch(`${API}/api/train/status`)
         .then((r) => r.json())
         .then((d) => {
@@ -180,11 +180,10 @@ export function usePredictor(user, { onNotify } = {}) {
     } = {}) => {
       if (!user) return false;
 
-      const res = await fetch(`${API}/api/user/${user.id}/predictions`, {
+      const res = await fetch(`${API}/api/user/by-email/${user.email}/predictions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user.id,
           predicted_price: Number(predictedPriceValue) || 0,
           predicted_age: Number(predictedAgeValue) || 0,
           dna_score: Number(predictedDNAValue) || 0,
@@ -203,7 +202,7 @@ export function usePredictor(user, { onNotify } = {}) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Unable to save prediction.");
 
-      fetchPredictions(user.id);
+      fetchPredictions(user.email);
       notifyBackendRefresh();
       if (!silent) onNotify?.("Prediction saved!", "success");
       return true;
@@ -426,7 +425,7 @@ export function usePredictor(user, { onNotify } = {}) {
       return false;
     }
     try {
-      await addPortfolio(user.id, {
+      await addPortfolioByEmail(user.email, {
         property_name: propertyName,
         city: form.City,
         state: form.State_Region,

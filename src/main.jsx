@@ -11,7 +11,7 @@ import HouseAISection from './sections/HouseAISection.jsx';
 import HouseAIPage from './sections/HouseAIPage.jsx';
 import { CURRENT_YEAR, countries } from './utils/constants.js';
 import { notifyBackendRefresh } from './utils/useBackendRefresh.js';
-import { addPortfolio } from './utils/api.js';
+import { addPortfolioByEmail } from './utils/api.js';
 import { ArrowLeft } from 'lucide-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard.jsx';
@@ -198,11 +198,10 @@ function App() {
   } = {}) => {
     if (!user) return false;
 
-    const res = await fetch(`${API}/api/user/${user.id}/predictions`, {
+    const res = await fetch(`${API}/api/user/by-email/${user.email}/predictions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id:         user.id,
         predicted_price: Number(predictedPriceValue) || 0,
         predicted_age:   Number(predictedAgeValue) || 0,
         dna_score:       Number(predictedDNAValue) || 0,
@@ -223,7 +222,7 @@ function App() {
       throw new Error(data.detail || 'Unable to save prediction.');
     }
 
-    fetchPredictions(user.id);
+    fetchPredictions(user.email);
     notifyBackendRefresh();
     if (!silent) alert('Prediction saved!');
     return true;
@@ -245,7 +244,7 @@ function App() {
             setIsTraining(false);
             clearInterval(interval);
             alert('ML Models successfully retrained on the new dataset!');
-            if (user) fetchPredictions(user.id);
+            if (user) fetchPredictions(user.email);
           }
         }
       } catch (err) {
@@ -255,9 +254,9 @@ function App() {
   };
 
   // ── Fetch saved predictions ──
-  const fetchPredictions = async (userId) => {
+  const fetchPredictions = async (userEmail) => {
     try {
-      const res = await fetch(`${API}/api/user/${userId}/predictions`);
+      const res = await fetch(`${API}/api/user/by-email/${userEmail}/predictions`);
       if (res.ok) setSavedPredictions(await res.json());
     } catch (err) {
       console.error('Failed to fetch predictions:', err);
@@ -266,7 +265,7 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      fetchPredictions(user.id);
+      fetchPredictions(user.email);
       fetch(`${API}/api/train/status`)
         .then(r => r.json())
         .then(d => { if (d.status === 'training') { setIsTraining(true); pollTrainingStatus(); } })
@@ -508,7 +507,7 @@ function App() {
       return;
     }
     try {
-      await addPortfolio(user.id, {
+      await addPortfolioByEmail(user.email, {
         property_name: propertyName,
         city: form.City,
         state: form.State_Region,
@@ -550,8 +549,13 @@ function App() {
   };
 
   const handleAuthSuccess = (authUser) => {
-    setUser(authUser);
-    localStorage.setItem('property_dna_user', JSON.stringify(authUser));
+    // Store only name and email, ignore id field if present
+    const userToStore = {
+      name: authUser.name,
+      email: authUser.email
+    };
+    setUser(userToStore);
+    localStorage.setItem('property_dna_user', JSON.stringify(userToStore));
   };
 
   const openAuth = () => {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { History, Download, SlidersHorizontal, TrendingUp, Activity, Award, MapPin } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions, addFavorite, saveReport } from "../../utils/api";
+import { getPredictionsByEmail, addFavoriteByEmail, saveReportByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { useDashboard } from "../context/DashboardContext";
 import { countries } from "../../utils/constants.js";
@@ -35,7 +35,7 @@ export default function PredictionHistory() {
       setLoading(false);
       return;
     }
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then(setHistory)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -129,7 +129,7 @@ export default function PredictionHistory() {
   const handleFavorite = async (item) => {
     if (!user) return;
     try {
-      await addFavorite(user.id, {
+      await addFavoriteByEmail(user.email, {
         city: item.city,
         state: item.state,
         country: item.country,
@@ -147,7 +147,7 @@ export default function PredictionHistory() {
     const location = [item.city, item.state, item.country].filter(Boolean).join(", ") || "Unknown";
     const reportName = `Report – ${location} (${item.created_at ? new Date(item.created_at).toLocaleDateString() : "Today"})`;
     try {
-      await saveReport(user.id, {
+      await saveReportByEmail(user.email, {
         report_name: reportName,
         country: item.country || "",
         state: item.state || "",

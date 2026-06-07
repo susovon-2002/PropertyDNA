@@ -6,7 +6,13 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem('property_dna_user');
-      return stored ? JSON.parse(stored) : null;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Backward compatibility: ignore id field if present
+        const { id, ...userWithoutId } = parsed;
+        return userWithoutId;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -17,7 +23,14 @@ export function UserProvider({ children }) {
     const sync = () => {
       try {
         const stored = localStorage.getItem('property_dna_user');
-        setUser(stored ? JSON.parse(stored) : null);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Backward compatibility: ignore id field if present
+          const { id, ...userWithoutId } = parsed;
+          setUser(userWithoutId);
+        } else {
+          setUser(null);
+        }
       } catch {
         setUser(null);
       }

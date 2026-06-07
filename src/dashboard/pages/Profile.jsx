@@ -15,7 +15,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getUser, getUserStats, getPredictions } from "../../utils/api";
+import { getUserByEmail, getUserStatsByEmail, getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { PageSkeleton } from "../components/Skeleton";
 import { formatCurrency } from "../../utils/formatCurrency";
@@ -37,12 +37,12 @@ export default function Profile() {
     setLoading(true);
     setError(null);
     Promise.all([
-      getUser(ctxUser.id),
-      getUserStats(ctxUser.id),
-      getPredictions(ctxUser.id)
+      getUserByEmail(ctxUser.email),
+      getUserStatsByEmail(ctxUser.email),
+      getPredictionsByEmail(ctxUser.email)
     ])
       .then(([p, s, preds]) => {
-        setProfile(p);
+        setProfile(p.user);
         setStats(s);
         // Determine the most frequent country analyzed
         const counts = {};

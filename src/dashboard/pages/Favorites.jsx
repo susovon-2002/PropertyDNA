@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Heart, Plus, Trash2, MapPin } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getFavorites, addFavorite, deleteFavorite } from "../../utils/api";
+import { getFavoritesByEmail, addFavoriteByEmail, deleteFavoriteByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { useDashboard } from "../context/DashboardContext";
 import { PageSkeleton } from "../components/Skeleton";
@@ -26,7 +26,7 @@ export default function Favorites() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    getFavorites(user.id)
+    getFavoritesByEmail(user.email)
       .then(setFavorites)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -49,7 +49,7 @@ export default function Favorites() {
     if (!user) return;
     setAdding(true);
     try {
-      await addFavorite(user.id, {
+      await addFavoriteByEmail(user.email, {
         city: form.city,
         state: form.state,
         country: form.country,
@@ -70,7 +70,7 @@ export default function Favorites() {
   const handleDelete = async (id) => {
     if (!confirm("Remove from watchlist?")) return;
     try {
-      await deleteFavorite(user.id, id);
+      await deleteFavoriteByEmail(user.email, id);
       setFavorites((prev) => prev.filter((f) => f.id !== id));
       addNotification("Removed from watchlist", "info");
     } catch (e) {

@@ -34,7 +34,6 @@ export default function Settings() {
           <dl className="settings-dl">
             <div><dt>Name</dt><dd>{user.name}</dd></div>
             <div><dt>Email</dt><dd>{user.email}</dd></div>
-            <div><dt>User ID</dt><dd>{user.id}</dd></div>
           </dl>
         </div>
 

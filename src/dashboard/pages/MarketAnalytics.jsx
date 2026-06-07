@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChartColumnBig, Globe2, BadgeDollarSign, FileText } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getUserStats, getPredictions } from "../../utils/api";
+import { getUserStatsByEmail, getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { formatCurrency } from "../../utils/formatCurrency";
 
@@ -18,7 +18,7 @@ export default function MarketAnalytics() {
       return;
     }
 
-    Promise.all([getUserStats(user.id), getPredictions(user.id)])
+    Promise.all([getUserStatsByEmail(user.email), getPredictionsByEmail(user.email)])
       .then(([s, preds]) => {
         setStats(s);
         const counts = {};

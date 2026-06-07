@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Plus, Trash2, Sparkles, Home, Ruler, BedDouble, Bath, CalendarDays, MapPin } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getPortfolio, addPortfolio, deletePortfolio } from "../../utils/api";
+import { getPortfolioByEmail, addPortfolioByEmail, deletePortfolioByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { useDashboard } from "../context/DashboardContext";
 import { countries } from "../../utils/constants.js";
@@ -39,7 +39,7 @@ export default function PropertyPortfolio() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    getPortfolio(user.id)
+    getPortfolioByEmail(user.email)
       .then(setItems)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -70,7 +70,7 @@ export default function PropertyPortfolio() {
     if (!user) return;
     setAdding(true);
     try {
-      await addPortfolio(user.id, {
+      await addPortfolioByEmail(user.email, {
         property_name: form.property_name,
         city: form.city,
         state: form.state,
@@ -99,7 +99,7 @@ export default function PropertyPortfolio() {
   const handleDelete = async (id) => {
     if (!confirm("Remove this property from your portfolio?")) return;
     try {
-      await deletePortfolio(user.id, id);
+      await deletePortfolioByEmail(user.email, id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       addNotification("Property removed", "info");
     } catch (e) {

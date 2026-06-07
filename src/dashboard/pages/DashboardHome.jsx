@@ -19,7 +19,7 @@ import DNARadarChart from "../components/DNARadarChart";
 import RecentPredictions from "../components/RecentPredictions";
 import DNAGauge from "../components/DNAGauge";
 import { useUser } from "../../utils/UserContext";
-import { getUser, getUserStats, getPredictions, getPortfolio, resetUserData } from "../../utils/api";
+import { getUserByEmail, getUserStatsByEmail, getPredictionsByEmail, getPortfolioByEmail, resetUserDataByEmail } from "../../utils/api";
 import { useBackendRefresh, notifyBackendRefresh } from "../../utils/useBackendRefresh";
 import { countries } from "../../utils/constants.js";
 import { PageSkeleton } from "../components/Skeleton";
@@ -73,13 +73,13 @@ export default function DashboardHome() {
     setLoading(true);
     setError(null);
     Promise.all([
-      getUser(user.id),
-      getUserStats(user.id),
-      getPredictions(user.id),
-      getPortfolio(user.id),
+      getUserByEmail(user.email),
+      getUserStatsByEmail(user.email),
+      getPredictionsByEmail(user.email),
+      getPortfolioByEmail(user.email),
     ])
       .then(([profileData, statsData, predictionData, portfolioData]) => {
-        setProfile(profileData);
+        setProfile(profileData.user);
         setStats(statsData);
         setPredictions(predictionData);
         setPortfolio(portfolioData);
@@ -97,7 +97,7 @@ export default function DashboardHome() {
     if (window.confirm("Are you sure you want to delete all your saved predictions, portfolio properties, favorites, and saved reports? This action cannot be undone.")) {
       try {
         setLoading(true);
-        await resetUserData(user.id);
+        await resetUserDataByEmail(user.email);
         notifyBackendRefresh();
         alert("All user data has been successfully deleted.");
       } catch (err) {

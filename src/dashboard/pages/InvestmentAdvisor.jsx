@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Lightbulb, Award, Globe2, BadgeDollarSign, ChartColumnBig } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions } from "../../utils/api";
+import { getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { formatCurrency } from "../../utils/formatCurrency";
 
@@ -17,7 +17,7 @@ export default function InvestmentAdvisor() {
       return;
     }
 
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then((preds) => {
         if (!preds.length) {
           setAdvice(null);

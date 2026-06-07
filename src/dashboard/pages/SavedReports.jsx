@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Plus, Trash2 } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getReports, saveReport, deleteReport } from "../../utils/api";
+import { getReportsByEmail, saveReportByEmail, deleteReportByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { useDashboard } from "../context/DashboardContext";
 import { PageSkeleton } from "../components/Skeleton";
@@ -28,7 +28,7 @@ export default function SavedReports() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    getReports(user.id)
+    getReportsByEmail(user.email)
       .then(setReports)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -55,7 +55,7 @@ export default function SavedReports() {
     }
     setSaving(true);
     try {
-      await saveReport(user.id, {
+      await saveReportByEmail(user.email, {
         report_name: form.report_name,
         country: form.country,
         state: form.state,
@@ -78,7 +78,7 @@ export default function SavedReports() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this report?")) return;
     try {
-      await deleteReport(user.id, id);
+      await deleteReportByEmail(user.email, id);
       setReports((prev) => prev.filter((r) => r.id !== id));
       addNotification("Report deleted", "info");
     } catch (e) {

@@ -18,35 +18,68 @@ async function apiFetch(url, options = {}) {
   return data;
 }
 
-// User
+// User - by ID (legacy, kept for backward compatibility)
 export const getUser = (uid) => apiFetch(`/api/user/${uid}`);
 export const getUserStats = (uid) => apiFetch(`/api/user/${uid}/stats`);
 
-// Predictions
+// User - by email (new)
+export const getUserByEmail = (email) => apiFetch(`/api/user/by-email/${email}`);
+export const getUserStatsByEmail = (email) => apiFetch(`/api/user/by-email/${email}/stats`);
+
+// Predictions - by ID (legacy)
 export const getPredictions = (uid) => apiFetch(`/api/user/${uid}/predictions`);
 export const savePrediction = (uid, body) =>
   apiFetch(`/api/user/${uid}/predictions`, { method: "POST", body: JSON.stringify(body) });
 
-// Portfolio
+// Predictions - by email (new)
+export const getPredictionsByEmail = (email) => apiFetch(`/api/user/by-email/${email}/predictions`);
+
+// Portfolio - by ID (legacy)
 export const getPortfolio = (uid) => apiFetch(`/api/user/${uid}/portfolio`);
 export const addPortfolio = (uid, body) =>
   apiFetch(`/api/user/${uid}/portfolio`, { method: "POST", body: JSON.stringify(body) });
 export const deletePortfolio = (uid, id) =>
   apiFetch(`/api/user/${uid}/portfolio/${id}`, { method: "DELETE" });
 
-// Favorites
+// Portfolio - by email (new)
+export const getPortfolioByEmail = (email) => apiFetch(`/api/user/by-email/${email}/portfolio`);
+export const addPortfolioByEmail = (email, body) =>
+  apiFetch(`/api/user/by-email/${email}/portfolio`, { method: "POST", body: JSON.stringify(body) });
+export const deletePortfolioByEmail = (email, id) =>
+  apiFetch(`/api/user/by-email/${email}/portfolio/${id}`, { method: "DELETE" });
+
+// Favorites - by ID (legacy)
 export const getFavorites = (uid) => apiFetch(`/api/user/${uid}/favorites`);
 export const addFavorite = (uid, body) =>
   apiFetch(`/api/user/${uid}/favorites`, { method: "POST", body: JSON.stringify(body) });
 export const deleteFavorite = (uid, id) =>
   apiFetch(`/api/user/${uid}/favorites/${id}`, { method: "DELETE" });
 
-// Reports
+// Favorites - by email (new)
+export const getFavoritesByEmail = (email) => apiFetch(`/api/user/by-email/${email}/favorites`);
+export const addFavoriteByEmail = (email, body) =>
+  apiFetch(`/api/user/by-email/${email}/favorites`, { method: "POST", body: JSON.stringify(body) });
+export const deleteFavoriteByEmail = (email, id) =>
+  apiFetch(`/api/user/by-email/${email}/favorites/${id}`, { method: "DELETE" });
+
+// Reports - by ID (legacy)
 export const getReports = (uid) => apiFetch(`/api/user/${uid}/reports`);
 export const saveReport = (uid, body) =>
   apiFetch(`/api/user/${uid}/reports`, { method: "POST", body: JSON.stringify(body) });
 export const deleteReport = (uid, id) =>
   apiFetch(`/api/user/${uid}/reports/${id}`, { method: "DELETE" });
 
+// Reports - by email (new)
+export const getReportsByEmail = (email) => apiFetch(`/api/user/by-email/${email}/reports`);
+export const saveReportByEmail = (email, body) =>
+  apiFetch(`/api/user/by-email/${email}/reports`, { method: "POST", body: JSON.stringify(body) });
+export const deleteReportByEmail = (email, id) =>
+  apiFetch(`/api/user/by-email/${email}/reports/${id}`, { method: "DELETE" });
+
+// Reset - by ID (legacy)
 export const resetUserData = (uid) =>
   apiFetch(`/api/user/${uid}/reset`, { method: "DELETE" });
+
+// Reset - by email (new)
+export const resetUserDataByEmail = (email) =>
+  apiFetch(`/api/user/by-email/${email}/reset`, { method: "DELETE" });

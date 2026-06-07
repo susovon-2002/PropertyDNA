@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from "recharts";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions, saveReport } from "../../utils/api";
+import { getPredictionsByEmail, saveReportByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { countries } from "../../utils/constants";
 import { useDashboard } from "../context/DashboardContext";
@@ -75,7 +75,7 @@ export default function PropertyDNAReports() {
       return;
     }
 
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then((preds) => {
         if (!preds.length) {
           setReport(null);
@@ -124,7 +124,7 @@ export default function PropertyDNAReports() {
     if (!report || !user) return;
     setSaving(true);
     try {
-      await saveReport(user.id, {
+      await saveReportByEmail(user.email, {
         report_name: `DNA Analysis Report – ${report.primaryCountry} (${new Date().toLocaleDateString()})`,
         country: report.primaryCountry,
         state: "",

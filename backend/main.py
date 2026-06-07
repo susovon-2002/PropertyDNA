@@ -549,10 +549,9 @@ def signup(payload: UserSignUp):
             "INSERT INTO users (name, email, password_hash, password_salt) VALUES (?, ?, ?, ?)",
             (name, email, pwd_hash, salt)
         )
-        user_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        return {"status": "success", "user": {"id": user_id, "name": name, "email": email}}
+        return {"status": "success", "user": {"name": name, "email": email}}
     except Exception as e:
         conn.close()
         raise HTTPException(status_code=500, detail=f"User registration error: {str(e)}")
@@ -584,7 +583,7 @@ def signin(payload: UserSignIn):
         conn.commit()
 
     conn.close()
-    return {"status": "success", "user": {"id": user["id"], "name": user["name"], "email": user["email"]}}
+    return {"status": "success", "user": {"name": user["name"], "email": user["email"]}}
 
 
 @app.post("/api/auth/forgot-password")
@@ -698,6 +697,26 @@ def predict_age(payload: PredictAgeRequest):
 # USER PROFILE ENDPOINTS
 # --------------------------------------------------
 
+@app.get("/api/user/by-email/{email}")
+def get_user_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        row = conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE lower(email) = ?",
+            (email,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True, "user": {"name": row["name"], "email": row["email"]}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.get("/api/user/{user_id}")
 def get_user(user_id: int):
     conn = get_db()
@@ -721,6 +740,55 @@ def get_user_stats(user_id: int):
     conn = get_db()
     try:
         require_user(conn, user_id)
+
+        pred = conn.execute("""
+            SELECT
+                COUNT(*)                          AS total_predictions,
+                COALESCE(AVG(predicted_price), 0) AS avg_price,
+                COALESCE(AVG(dna_score), 0)       AS avg_dna_score,
+                COUNT(DISTINCT NULLIF(country,'')) AS countries_analyzed
+            FROM saved_predictions
+            WHERE user_id = ?
+        """, (user_id,)).fetchone()
+
+        reports_count = conn.execute(
+            "SELECT COUNT(*) FROM saved_reports WHERE user_id = ?", (user_id,)
+        ).fetchone()[0]
+
+        favorites_count = conn.execute(
+            "SELECT COUNT(*) FROM favorites WHERE user_id = ?", (user_id,)
+        ).fetchone()[0]
+
+        portfolio_count = conn.execute(
+            "SELECT COUNT(*) FROM portfolio WHERE user_id = ?", (user_id,)
+        ).fetchone()[0]
+
+        return {
+            "total_predictions":  pred["total_predictions"],
+            "avg_price":          round(pred["avg_price"], 2),
+            "avg_dna_score":      round(pred["avg_dna_score"], 2),
+            "countries_analyzed": pred["countries_analyzed"],
+            "saved_reports":      reports_count,
+            "favorites":          favorites_count,
+            "portfolio_count":    portfolio_count,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.get("/api/user/by-email/{email}/stats")
+def get_user_stats_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
 
         pred = conn.execute("""
             SELECT
@@ -786,12 +854,73 @@ def get_predictions(user_id: int):
         conn.close()
 
 
+@app.get("/api/user/by-email/{email}/predictions")
+def get_predictions_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        rows = conn.execute("""
+            SELECT id, predicted_price, predicted_age, dna_score,
+                   country, state, city, created_at
+            FROM saved_predictions
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        """, (user_id,)).fetchall()
+        return [dict(r) for r in rows]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.post("/api/user/{user_id}/predictions")
 def save_prediction(user_id: int, payload: SavePredictionRequest):
     if payload.user_id != user_id:
         raise HTTPException(status_code=400, detail="user_id in body must match URL parameter.")
     conn = sqlite3.connect(DB_PATH)
     try:
+        require_user(conn, user_id)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO saved_predictions
+                (user_id, predicted_price, predicted_age, dna_score,
+                 country, state, city,
+                 year_built, rooms, size_sqft, material, location, renovation)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            payload.predicted_price, payload.predicted_age, payload.dna_score,
+            payload.country, payload.state, payload.city,
+            payload.year_built or 0, payload.rooms or 0, payload.size_sqft or 0,
+            payload.material or "", payload.location or "", payload.renovation or ""
+        ))
+        conn.commit()
+        return {"status": "success", "prediction_id": cursor.lastrowid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save prediction: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.post("/api/user/by-email/{email}/predictions")
+def save_prediction_by_email(email: str, payload: SavePredictionRequest):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         require_user(conn, user_id)
         cursor = conn.cursor()
         cursor.execute("""
@@ -891,10 +1020,71 @@ def get_portfolio(user_id: int):
         conn.close()
 
 
+@app.get("/api/user/by-email/{email}/portfolio")
+def get_portfolio_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        rows = conn.execute("""
+            SELECT id, property_name, city, state, country, predicted_price, dna_score, notes,
+                   property_type, year_built, house_size_sqft, bedrooms, bathrooms, predicted_age,
+                   created_at
+            FROM portfolio
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        """, (user_id,)).fetchall()
+        return [dict(r) for r in rows]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.post("/api/user/{user_id}/portfolio")
 def add_portfolio(user_id: int, payload: PortfolioAddRequest):
     conn = sqlite3.connect(DB_PATH)
     try:
+        require_user(conn, user_id)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO portfolio (
+                user_id, property_name, city, state, country, predicted_price, dna_score, notes,
+                property_type, year_built, house_size_sqft, bedrooms, bathrooms, predicted_age
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            user_id, payload.property_name or "", payload.city, payload.state, payload.country,
+            payload.predicted_price, payload.dna_score, payload.notes,
+            payload.property_type or "", payload.year_built or 0, payload.house_size_sqft or 0,
+            payload.bedrooms or 0, payload.bathrooms or 0, payload.predicted_age or 0
+        ))
+        conn.commit()
+        return {"status": "success", "id": cursor.lastrowid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add portfolio item: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.post("/api/user/by-email/{email}/portfolio")
+def add_portfolio_by_email(email: str, payload: PortfolioAddRequest):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         require_user(conn, user_id)
         cursor = conn.cursor()
         cursor.execute("""
@@ -939,6 +1129,32 @@ def delete_portfolio(user_id: int, item_id: int):
         conn.close()
 
 
+@app.delete("/api/user/by-email/{email}/portfolio/{item_id}")
+def delete_portfolio_by_email(email: str, item_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        require_user(conn, user_id)
+        result = conn.execute(
+            "DELETE FROM portfolio WHERE id = ? AND user_id = ?", (item_id, user_id)
+        )
+        conn.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Portfolio item not found.")
+        return {"status": "success", "message": "Portfolio item deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 # --------------------------------------------------
 # FAVORITES ENDPOINTS
 # --------------------------------------------------
@@ -948,6 +1164,31 @@ def get_favorites(user_id: int):
     conn = get_db()
     try:
         require_user(conn, user_id)
+        rows = conn.execute("""
+            SELECT id, city, state, country, dna_score, predicted_price, created_at
+            FROM favorites
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        """, (user_id,)).fetchall()
+        return [dict(r) for r in rows]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.get("/api/user/by-email/{email}/favorites")
+def get_favorites_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         rows = conn.execute("""
             SELECT id, city, state, country, dna_score, predicted_price, created_at
             FROM favorites
@@ -984,10 +1225,63 @@ def add_favorite(user_id: int, payload: FavoriteAddRequest):
         conn.close()
 
 
+@app.post("/api/user/by-email/{email}/favorites")
+def add_favorite_by_email(email: str, payload: FavoriteAddRequest):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        require_user(conn, user_id)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO favorites (user_id, city, state, country, dna_score, predicted_price)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (user_id, payload.city, payload.state, payload.country,
+              payload.dna_score, payload.predicted_price))
+        conn.commit()
+        return {"status": "success", "id": cursor.lastrowid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add favorite: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.delete("/api/user/{user_id}/favorites/{item_id}")
 def delete_favorite(user_id: int, item_id: int):
     conn = sqlite3.connect(DB_PATH)
     try:
+        require_user(conn, user_id)
+        result = conn.execute(
+            "DELETE FROM favorites WHERE id = ? AND user_id = ?", (item_id, user_id)
+        )
+        conn.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Favorite not found.")
+        return {"status": "success", "message": "Favorite deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.delete("/api/user/by-email/{email}/favorites/{item_id}")
+def delete_favorite_by_email(email: str, item_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         require_user(conn, user_id)
         result = conn.execute(
             "DELETE FROM favorites WHERE id = ? AND user_id = ?", (item_id, user_id)
@@ -1029,10 +1323,64 @@ def get_reports(user_id: int):
         conn.close()
 
 
+@app.get("/api/user/by-email/{email}/reports")
+def get_reports_by_email(email: str):
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        rows = conn.execute("""
+            SELECT id, report_name, country, state, city,
+                   predicted_price, dna_score, predicted_age, created_at
+            FROM saved_reports
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        """, (user_id,)).fetchall()
+        return [dict(r) for r in rows]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.post("/api/user/{user_id}/reports")
 def save_report(user_id: int, payload: ReportSaveRequest):
     conn = sqlite3.connect(DB_PATH)
     try:
+        require_user(conn, user_id)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO saved_reports
+                (user_id, report_name, country, state, city, predicted_price, dna_score, predicted_age)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, payload.report_name, payload.country, payload.state,
+              payload.city, payload.predicted_price, payload.dna_score, payload.predicted_age))
+        conn.commit()
+        return {"status": "success", "id": cursor.lastrowid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save report: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.post("/api/user/by-email/{email}/reports")
+def save_report_by_email(email: str, payload: ReportSaveRequest):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         require_user(conn, user_id)
         cursor = conn.cursor()
         cursor.execute("""
@@ -1071,11 +1419,62 @@ def delete_report(user_id: int, item_id: int):
         conn.close()
 
 
+@app.delete("/api/user/by-email/{email}/reports/{item_id}")
+def delete_report_by_email(email: str, item_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
+        require_user(conn, user_id)
+        result = conn.execute(
+            "DELETE FROM saved_reports WHERE id = ? AND user_id = ?", (item_id, user_id)
+        )
+        conn.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Report not found.")
+        return {"status": "success", "message": "Report deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
 @app.delete("/api/user/{user_id}/reset")
 def reset_user_data(user_id: int):
     conn = sqlite3.connect(DB_PATH)
     try:
         require_user(conn, user_id)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM saved_predictions WHERE user_id = ?", (user_id,))
+        cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))
+        cursor.execute("DELETE FROM favorites WHERE user_id = ?", (user_id,))
+        cursor.execute("DELETE FROM saved_reports WHERE user_id = ?", (user_id,))
+        conn.commit()
+        return {"status": "success", "message": "All user data has been deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.delete("/api/user/by-email/{email}/reset")
+def reset_user_data_by_email(email: str):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user["id"]
+        
         cursor = conn.cursor()
         cursor.execute("DELETE FROM saved_predictions WHERE user_id = ?", (user_id,))
         cursor.execute("DELETE FROM portfolio WHERE user_id = ?", (user_id,))

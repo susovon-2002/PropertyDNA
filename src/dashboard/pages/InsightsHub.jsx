@@ -28,7 +28,7 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 import CountryPieChart from "../components/CountryPieChart";
 import MarketTrendChart from "../components/MarketTrendChart";
 import { useUser } from "../../utils/UserContext";
-import { getUserStats, getPredictions } from "../../utils/api";
+import { getUserStatsByEmail, getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { countries } from "../../utils/constants.js";
 import { PageSkeleton } from "../components/Skeleton";
@@ -65,7 +65,7 @@ export default function InsightsHub() {
       return;
     }
     setLoading(true);
-    Promise.all([getUserStats(user.id), getPredictions(user.id)])
+    Promise.all([getUserStatsByEmail(user.email), getPredictionsByEmail(user.email)])
       .then(([s, preds]) => {
         setStats(s);
         setPredictions(preds);
