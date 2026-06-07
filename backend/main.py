@@ -264,6 +264,19 @@ def get_db():
     return conn
 
 
+def get_user_by_email(email: str):
+    """Get user ID by email. Returns user_id or raises 404 if not found."""
+    conn = get_db()
+    try:
+        email = validate_email(email)
+        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user["id"]
+    finally:
+        conn.close()
+
+
 def require_user(conn, user_id: int):
     """Raise 404 if user_id doesn't exist."""
     row = conn.execute("SELECT id FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -781,11 +794,7 @@ def get_user_stats(user_id: int):
 def get_user_stats_by_email(email: str):
     conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
 
         pred = conn.execute("""
             SELECT
@@ -855,11 +864,7 @@ def get_predictions(user_id: int):
 def get_predictions_by_email(email: str):
     conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         rows = conn.execute("""
             SELECT id, predicted_price, predicted_age, dna_score,
@@ -910,13 +915,9 @@ def save_prediction(user_id: int, payload: SavePredictionRequest):
 
 @app.post("/api/user/by-email/{email}/predictions")
 def save_prediction_by_email(email: str, payload: SavePredictionRequest):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1021,11 +1022,7 @@ def get_portfolio(user_id: int):
 def get_portfolio_by_email(email: str):
     conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         rows = conn.execute("""
             SELECT id, property_name, city, state, country, predicted_price, dna_score, notes,
@@ -1074,13 +1071,9 @@ def add_portfolio(user_id: int, payload: PortfolioAddRequest):
 
 @app.post("/api/user/by-email/{email}/portfolio")
 def add_portfolio_by_email(email: str, payload: PortfolioAddRequest):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1128,13 +1121,9 @@ def delete_portfolio(user_id: int, item_id: int):
 
 @app.delete("/api/user/by-email/{email}/portfolio/{item_id}")
 def delete_portfolio_by_email(email: str, item_id: int):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1180,11 +1169,7 @@ def get_favorites(user_id: int):
 def get_favorites_by_email(email: str):
     conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         rows = conn.execute("""
             SELECT id, city, state, country, dna_score, predicted_price, created_at
@@ -1224,13 +1209,9 @@ def add_favorite(user_id: int, payload: FavoriteAddRequest):
 
 @app.post("/api/user/by-email/{email}/favorites")
 def add_favorite_by_email(email: str, payload: FavoriteAddRequest):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1271,13 +1252,9 @@ def delete_favorite(user_id: int, item_id: int):
 
 @app.delete("/api/user/by-email/{email}/favorites/{item_id}")
 def delete_favorite_by_email(email: str, item_id: int):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1324,11 +1301,7 @@ def get_reports(user_id: int):
 def get_reports_by_email(email: str):
     conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         rows = conn.execute("""
             SELECT id, report_name, country, state, city,
@@ -1370,13 +1343,9 @@ def save_report(user_id: int, payload: ReportSaveRequest):
 
 @app.post("/api/user/by-email/{email}/reports")
 def save_report_by_email(email: str, payload: ReportSaveRequest):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1418,13 +1387,9 @@ def delete_report(user_id: int, item_id: int):
 
 @app.delete("/api/user/by-email/{email}/reports/{item_id}")
 def delete_report_by_email(email: str, item_id: int):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         require_user(conn, user_id)
         result = conn.execute(
@@ -1464,13 +1429,9 @@ def reset_user_data(user_id: int):
 
 @app.delete("/api/user/by-email/{email}/reset")
 def reset_user_data_by_email(email: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db()
     try:
-        email = validate_email(email)
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
+        user_id = get_user_by_email(email)
         
         cursor = conn.cursor()
         cursor.execute("DELETE FROM saved_predictions WHERE user_id = ?", (user_id,))
