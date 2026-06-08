@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getUserStats } from "../../utils/api";
+import { getUserStatsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 
 const CARD_DEFS = [
@@ -36,7 +36,7 @@ export default function KPICards() {
     setLoading(true);
     setError(null);
 
-    getUserStats(user.id)
+    getUserStatsByEmail(user.email)
       .then(setStats)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));

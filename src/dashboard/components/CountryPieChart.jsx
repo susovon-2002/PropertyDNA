@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Globe2 } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions } from "../../utils/api";
+import { getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 
 const COLORS = ["#16a34a", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6", "#f97316", "#ec4899", "#06b6d4"];
@@ -19,7 +19,7 @@ export default function CountryPieChart() {
       return;
     }
 
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then((preds) => {
         const counts = {};
         preds.forEach((p) => {

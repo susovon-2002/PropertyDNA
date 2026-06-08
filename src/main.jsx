@@ -198,6 +198,11 @@ function App() {
   } = {}) => {
     if (!user) return false;
 
+    console.log('[DEBUG] savePredictionSnapshot called');
+    console.log('[DEBUG] user object:', user);
+    console.log('[DEBUG] user.email:', user.email);
+    console.log('[DEBUG] API:', API);
+
     const res = await fetch(`${API}/api/user/by-email/${user.email}/predictions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -217,7 +222,10 @@ function App() {
       }),
     });
 
+    console.log('[DEBUG] Response status:', res.status);
     const data = await res.json();
+    console.log('[DEBUG] Response data:', data);
+
     if (!res.ok) {
       throw new Error(data.detail || 'Unable to save prediction.');
     }
@@ -255,11 +263,20 @@ function App() {
 
   // ── Fetch saved predictions ──
   const fetchPredictions = async (userEmail) => {
+    console.log('[DEBUG] fetchPredictions called with email:', userEmail);
     try {
       const res = await fetch(`${API}/api/user/by-email/${userEmail}/predictions`);
-      if (res.ok) setSavedPredictions(await res.json());
+      console.log('[DEBUG] fetchPredictions response status:', res.status);
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[DEBUG] fetchPredictions data:', data);
+        setSavedPredictions(data);
+      } else {
+        const errorData = await res.json();
+        console.log('[DEBUG] fetchPredictions error:', errorData);
+      }
     } catch (err) {
-      console.error('Failed to fetch predictions:', err);
+      console.error('[DEBUG] Failed to fetch predictions:', err);
     }
   };
 

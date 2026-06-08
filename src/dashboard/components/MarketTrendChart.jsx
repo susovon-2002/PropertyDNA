@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions } from "../../utils/api";
+import { getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { countries } from "../../utils/constants.js";
 
@@ -23,7 +23,7 @@ export default function MarketTrendChart() {
       return;
     }
 
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then((preds) => {
         if (preds.length === 0) {
           setData([]);

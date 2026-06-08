@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUser } from "../../utils/UserContext";
-import { getPredictions } from "../../utils/api";
+import { getPredictionsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 import { formatCurrency } from "../../utils/formatCurrency";
 
@@ -18,7 +18,7 @@ export default function RecentPredictions() {
       return;
     }
 
-    getPredictions(user.id)
+    getPredictionsByEmail(user.email)
       .then((data) => setPredictions(data.slice(0, 5)))
       .catch(console.error)
       .finally(() => setLoading(false));

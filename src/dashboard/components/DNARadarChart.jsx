@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { ScanLine } from "lucide-react";
 import { useUser } from "../../utils/UserContext";
-import { getUserStats } from "../../utils/api";
+import { getUserStatsByEmail } from "../../utils/api";
 import { useBackendRefresh } from "../../utils/useBackendRefresh";
 
 export default function DNARadarChart() {
@@ -17,7 +17,7 @@ export default function DNARadarChart() {
       return;
     }
 
-    getUserStats(user.id)
+    getUserStatsByEmail(user.email)
       .then((stats) => {
         const dna = stats.avg_dna_score || 0;
         setData([

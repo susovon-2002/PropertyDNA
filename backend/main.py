@@ -262,22 +262,38 @@ def get_db():
     return conn
 
 
-def get_user_id_by_email(email: str):
-    """Get user ID by email. Returns user_id or raises 404 if not found."""
+def get_or_create_user_record(email: str):
+    """Retrieves a user row by email, auto-creating it if it doesn't exist."""
     conn = get_db()
     try:
-        print(f"[DEBUG] get_user_id_by_email called with: {email}")
         email = validate_email(email)
-        print(f"[DEBUG] Email after validation: {email}")
-        user = conn.execute("SELECT id FROM users WHERE lower(email) = ?", (email,)).fetchone()
-        print(f"[DEBUG] User query result: {user}")
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_id = user["id"]
-        print(f"[DEBUG] Returning user_id: {user_id}")
-        return user_id
+        row = conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE lower(email) = ?",
+            (email,)
+        ).fetchone()
+        if not row:
+            name = email.split('@')[0].capitalize()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO users (name, email, password_hash, password_salt) VALUES (?, ?, ?, ?)",
+                (name, email, "auto_provisioned_dummy_hash", "auto_provisioned_dummy_salt")
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT id, name, email, created_at FROM users WHERE lower(email) = ?",
+                (email,)
+            ).fetchone()
+            print(f"[DEBUG] Auto-created user {name} ({email}) with id: {row['id']}")
+        return row
     finally:
         conn.close()
+
+
+def get_user_id_by_email(email: str):
+    """Get user ID by email. Auto-creates user if not found."""
+    user = get_or_create_user_record(email)
+    return user["id"]
+
 
 
 def require_user(conn, user_id: int):
@@ -551,10 +567,26 @@ def signup(payload: UserSignUp):
 
     conn   = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE lower(email) = ?", (email,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="Email is already registered.")
+    cursor.execute("SELECT id, password_hash FROM users WHERE lower(email) = ?", (email,))
+    existing = cursor.fetchone()
+    if existing:
+        if existing[1] == "auto_provisioned_dummy_hash":
+            # Overwrite auto-provisioned dummy account with real user registration details
+            salt, pwd_hash = hash_password_secure(payload.password)
+            try:
+                cursor.execute(
+                    "UPDATE users SET name = ?, password_hash = ?, password_salt = ? WHERE id = ?",
+                    (name, pwd_hash, salt, existing[0])
+                )
+                conn.commit()
+                conn.close()
+                return {"status": "success", "user": {"name": name, "email": email}}
+            except Exception as e:
+                conn.close()
+                raise HTTPException(status_code=500, detail=f"User registration error: {str(e)}")
+        else:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Email is already registered.")
 
     salt, pwd_hash = hash_password_secure(payload.password)
     try:
@@ -567,6 +599,7 @@ def signup(payload: UserSignUp):
         return {"status": "success", "user": {"name": name, "email": email}}
     except Exception as e:
         conn.close()
+
         raise HTTPException(status_code=500, detail=f"User registration error: {str(e)}")
 
 
@@ -712,22 +745,14 @@ def predict_age(payload: PredictAgeRequest):
 
 @app.get("/api/user/by-email/{email}")
 def get_user_by_email(email: str):
-    conn = get_db()
     try:
-        email = validate_email(email)
-        row = conn.execute(
-            "SELECT id, name, email, created_at FROM users WHERE lower(email) = ?",
-            (email,)
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="User not found")
+        row = get_or_create_user_record(email)
         return {"success": True, "user": {"name": row["name"], "email": row["email"]}}
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        conn.close()
+
 
 
 @app.get("/api/user/{user_id}")
