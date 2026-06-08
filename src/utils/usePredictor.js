@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { CURRENT_YEAR, countries } from "./constants.js";
 import { notifyBackendRefresh } from "./useBackendRefresh.js";
-import { addPortfolioByEmail } from "./api.js";
+import { addPortfolioByEmail, savePredictionByEmail, getPredictionsByEmail } from "./api.js";
 
 const API = import.meta.env.VITE_API_BASE_URL || "https://propertydna.onrender.com";
 
@@ -127,11 +127,16 @@ export function usePredictor(user, { onNotify } = {}) {
   );
 
   const fetchPredictions = useCallback(async (userEmail) => {
+    if (!userEmail) return;
     try {
-      const res = await fetch(`${API}/api/user/by-email/${userEmail}/predictions`);
-      if (res.ok) setSavedPredictions(await res.json());
+      // getPredictionsByEmail caches to localStorage and restores from cache on server reset
+      const data = await getPredictionsByEmail(userEmail);
+      setSavedPredictions(data || []);
     } catch (err) {
       console.error("Failed to fetch predictions:", err);
+      // Fall back to localStorage cache
+      const cached = JSON.parse(localStorage.getItem(`predictions_${userEmail}`) || "[]");
+      setSavedPredictions(cached);
     }
   }, []);
 
@@ -178,29 +183,26 @@ export function usePredictor(user, { onNotify } = {}) {
       predictedDNAValue = predictedDNA ?? 0,
       silent = true,
     } = {}) => {
-      if (!user) return false;
+      if (!user || !user.email) return false;
 
-      const res = await fetch(`${API}/api/user/by-email/${user.email}/predictions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          predicted_price: Number(predictedPriceValue) || 0,
-          predicted_age: Number(predictedAgeValue) || 0,
-          dna_score: Number(predictedDNAValue) || 0,
-          country: form.Country,
-          state: form.State_Region,
-          city: form.City,
-          year_built: Number(form.Year_Built),
-          rooms: Number(form.Bedrooms),
-          size_sqft: Number(form.House_Size_sqft),
-          material: form.Construction_Material,
-          location: form.Country,
-          renovation: Number(form.Renovation_Count) > 0 ? "Yes" : "No",
-        }),
-      });
+      const body = {
+        predicted_price: Number(predictedPriceValue) || 0,
+        predicted_age: Number(predictedAgeValue) || 0,
+        dna_score: Number(predictedDNAValue) || 0,
+        country: form.Country,
+        state: form.State_Region,
+        city: form.City,
+        year_built: Number(form.Year_Built),
+        rooms: Number(form.Bedrooms),
+        size_sqft: Number(form.House_Size_sqft),
+        material: form.Construction_Material,
+        location: form.Country,
+        renovation: Number(form.Renovation_Count) > 0 ? "Yes" : "No",
+      };
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Unable to save prediction.");
+      // savePredictionByEmail caches to localStorage FIRST, then syncs to server
+      // This guarantees data survives server resets for ALL users
+      await savePredictionByEmail(user.email, body);
 
       fetchPredictions(user.email);
       notifyBackendRefresh();

@@ -11,7 +11,7 @@ import HouseAISection from './sections/HouseAISection.jsx';
 import HouseAIPage from './sections/HouseAIPage.jsx';
 import { CURRENT_YEAR, countries } from './utils/constants.js';
 import { notifyBackendRefresh } from './utils/useBackendRefresh.js';
-import { addPortfolioByEmail } from './utils/api.js';
+import { addPortfolioByEmail, savePredictionByEmail } from './utils/api.js';
 import { ArrowLeft } from 'lucide-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard.jsx';
@@ -196,39 +196,26 @@ function App() {
     predictedDNAValue = predictedDNA ?? 0,
     silent = true,
   } = {}) => {
-    if (!user) return false;
+    if (!user || !user.email) return false;
 
-    console.log('[DEBUG] savePredictionSnapshot called');
-    console.log('[DEBUG] user object:', user);
-    console.log('[DEBUG] user.email:', user.email);
-    console.log('[DEBUG] API:', API);
+    const body = {
+      predicted_price: Number(predictedPriceValue) || 0,
+      predicted_age:   Number(predictedAgeValue) || 0,
+      dna_score:       Number(predictedDNAValue) || 0,
+      country:         form.Country,
+      state:           form.State_Region,
+      city:            form.City,
+      year_built:      Number(form.Year_Built),
+      rooms:           Number(form.Bedrooms),
+      size_sqft:       Number(form.House_Size_sqft),
+      material:        form.Construction_Material,
+      location:        form.Country,
+      renovation:      Number(form.Renovation_Count) > 0 ? 'Yes' : 'No',
+    };
 
-    const res = await fetch(`${API}/api/user/by-email/${user.email}/predictions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        predicted_price: Number(predictedPriceValue) || 0,
-        predicted_age:   Number(predictedAgeValue) || 0,
-        dna_score:       Number(predictedDNAValue) || 0,
-        country:         form.Country,
-        state:           form.State_Region,
-        city:            form.City,
-        year_built:      Number(form.Year_Built),
-        rooms:           Number(form.Bedrooms),
-        size_sqft:       Number(form.House_Size_sqft),
-        material:        form.Construction_Material,
-        location:        form.Country,
-        renovation:      Number(form.Renovation_Count) > 0 ? 'Yes' : 'No',
-      }),
-    });
-
-    console.log('[DEBUG] Response status:', res.status);
-    const data = await res.json();
-    console.log('[DEBUG] Response data:', data);
-
-    if (!res.ok) {
-      throw new Error(data.detail || 'Unable to save prediction.');
-    }
+    // savePredictionByEmail writes to localStorage first (offline-safe)
+    // then syncs to server – works for ALL users regardless of DB state
+    await savePredictionByEmail(user.email, body);
 
     fetchPredictions(user.email);
     notifyBackendRefresh();
