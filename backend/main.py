@@ -822,7 +822,9 @@ def get_user_stats(user_id: int):
 def get_user_stats_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] get_user_stats_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] get_user_stats_by_email - resolved user_id: {user_id}")
 
         pred = conn.execute("""
             SELECT
@@ -1061,7 +1063,9 @@ def get_portfolio(user_id: int):
 def get_portfolio_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] get_portfolio_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] get_portfolio_by_email - resolved user_id: {user_id}")
         
         rows = conn.execute("""
             SELECT id, property_name, city, state, country, predicted_price, dna_score, notes,
@@ -1071,6 +1075,7 @@ def get_portfolio_by_email(email: str):
             WHERE user_id = ?
             ORDER BY created_at DESC
         """, (user_id,)).fetchall()
+        print(f"[DEBUG] get_portfolio_by_email - returning {len(rows)} portfolio items")
         return [dict(r) for r in rows]
     except HTTPException:
         raise
@@ -1112,7 +1117,9 @@ def add_portfolio(user_id: int, payload: PortfolioAddRequest):
 def add_portfolio_by_email(email: str, payload: PortfolioAddRequest):
     conn = get_db()
     try:
+        print(f"[DEBUG] add_portfolio_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] add_portfolio_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1129,7 +1136,9 @@ def add_portfolio_by_email(email: str, payload: PortfolioAddRequest):
             payload.bedrooms or 0, payload.bathrooms or 0, payload.predicted_age or 0
         ))
         conn.commit()
-        return {"status": "success", "id": cursor.lastrowid}
+        portfolio_id = cursor.lastrowid
+        print(f"[DEBUG] add_portfolio_by_email - inserted portfolio item with ID: {portfolio_id}")
+        return {"status": "success", "id": portfolio_id}
     except HTTPException:
         raise
     except Exception as e:
@@ -1162,13 +1171,16 @@ def delete_portfolio(user_id: int, item_id: int):
 def delete_portfolio_by_email(email: str, item_id: int):
     conn = get_db()
     try:
+        print(f"[DEBUG] delete_portfolio_by_email - email: {email}, item_id: {item_id}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] delete_portfolio_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         result = conn.execute(
             "DELETE FROM portfolio WHERE id = ? AND user_id = ?", (item_id, user_id)
         )
         conn.commit()
+        print(f"[DEBUG] delete_portfolio_by_email - deleted {result.rowcount} portfolio items")
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Portfolio item not found.")
         return {"status": "success", "message": "Portfolio item deleted."}
@@ -1208,7 +1220,9 @@ def get_favorites(user_id: int):
 def get_favorites_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] get_favorites_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] get_favorites_by_email - resolved user_id: {user_id}")
         
         rows = conn.execute("""
             SELECT id, city, state, country, dna_score, predicted_price, created_at
@@ -1216,6 +1230,7 @@ def get_favorites_by_email(email: str):
             WHERE user_id = ?
             ORDER BY created_at DESC
         """, (user_id,)).fetchall()
+        print(f"[DEBUG] get_favorites_by_email - returning {len(rows)} favorites")
         return [dict(r) for r in rows]
     except HTTPException:
         raise
@@ -1250,7 +1265,9 @@ def add_favorite(user_id: int, payload: FavoriteAddRequest):
 def add_favorite_by_email(email: str, payload: FavoriteAddRequest):
     conn = get_db()
     try:
+        print(f"[DEBUG] add_favorite_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] add_favorite_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1260,7 +1277,9 @@ def add_favorite_by_email(email: str, payload: FavoriteAddRequest):
         """, (user_id, payload.city, payload.state, payload.country,
               payload.dna_score, payload.predicted_price))
         conn.commit()
-        return {"status": "success", "id": cursor.lastrowid}
+        favorite_id = cursor.lastrowid
+        print(f"[DEBUG] add_favorite_by_email - inserted favorite with ID: {favorite_id}")
+        return {"status": "success", "id": favorite_id}
     except HTTPException:
         raise
     except Exception as e:
@@ -1293,13 +1312,16 @@ def delete_favorite(user_id: int, item_id: int):
 def delete_favorite_by_email(email: str, item_id: int):
     conn = get_db()
     try:
+        print(f"[DEBUG] delete_favorite_by_email - email: {email}, item_id: {item_id}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] delete_favorite_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         result = conn.execute(
             "DELETE FROM favorites WHERE id = ? AND user_id = ?", (item_id, user_id)
         )
         conn.commit()
+        print(f"[DEBUG] delete_favorite_by_email - deleted {result.rowcount} favorites")
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Favorite not found.")
         return {"status": "success", "message": "Favorite deleted."}
@@ -1340,7 +1362,9 @@ def get_reports(user_id: int):
 def get_reports_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] get_reports_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] get_reports_by_email - resolved user_id: {user_id}")
         
         rows = conn.execute("""
             SELECT id, report_name, country, state, city,
@@ -1349,6 +1373,7 @@ def get_reports_by_email(email: str):
             WHERE user_id = ?
             ORDER BY created_at DESC
         """, (user_id,)).fetchall()
+        print(f"[DEBUG] get_reports_by_email - returning {len(rows)} reports")
         return [dict(r) for r in rows]
     except HTTPException:
         raise
@@ -1384,7 +1409,9 @@ def save_report(user_id: int, payload: ReportSaveRequest):
 def save_report_by_email(email: str, payload: ReportSaveRequest):
     conn = get_db()
     try:
+        print(f"[DEBUG] save_report_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] save_report_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         cursor = conn.cursor()
@@ -1395,7 +1422,9 @@ def save_report_by_email(email: str, payload: ReportSaveRequest):
         """, (user_id, payload.report_name, payload.country, payload.state,
               payload.city, payload.predicted_price, payload.dna_score, payload.predicted_age))
         conn.commit()
-        return {"status": "success", "id": cursor.lastrowid}
+        report_id = cursor.lastrowid
+        print(f"[DEBUG] save_report_by_email - inserted report with ID: {report_id}")
+        return {"status": "success", "id": report_id}
     except HTTPException:
         raise
     except Exception as e:
@@ -1428,13 +1457,16 @@ def delete_report(user_id: int, item_id: int):
 def delete_report_by_email(email: str, item_id: int):
     conn = get_db()
     try:
+        print(f"[DEBUG] delete_report_by_email - email: {email}, item_id: {item_id}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] delete_report_by_email - resolved user_id: {user_id}")
         
         require_user(conn, user_id)
         result = conn.execute(
             "DELETE FROM saved_reports WHERE id = ? AND user_id = ?", (item_id, user_id)
         )
         conn.commit()
+        print(f"[DEBUG] delete_report_by_email - deleted {result.rowcount} reports")
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Report not found.")
         return {"status": "success", "message": "Report deleted."}
@@ -1470,7 +1502,9 @@ def reset_user_data(user_id: int):
 def reset_user_data_by_email(email: str):
     conn = get_db()
     try:
+        print(f"[DEBUG] reset_user_data_by_email - email: {email}")
         user_id = get_user_id_by_email(email)
+        print(f"[DEBUG] reset_user_data_by_email - resolved user_id: {user_id}")
         
         cursor = conn.cursor()
         cursor.execute("DELETE FROM saved_predictions WHERE user_id = ?", (user_id,))
@@ -1478,6 +1512,7 @@ def reset_user_data_by_email(email: str):
         cursor.execute("DELETE FROM favorites WHERE user_id = ?", (user_id,))
         cursor.execute("DELETE FROM saved_reports WHERE user_id = ?", (user_id,))
         conn.commit()
+        print(f"[DEBUG] reset_user_data_by_email - deleted all data for user_id {user_id}")
         return {"status": "success", "message": "All user data has been deleted."}
     except HTTPException:
         raise

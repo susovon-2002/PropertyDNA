@@ -12,6 +12,7 @@ import HouseAIPage from './sections/HouseAIPage.jsx';
 import { CURRENT_YEAR, countries } from './utils/constants.js';
 import { notifyBackendRefresh } from './utils/useBackendRefresh.js';
 import { addPortfolioByEmail, savePredictionByEmail } from './utils/api.js';
+import { getCurrentUserEmail, getCurrentUser } from './utils/userHelpers.js';
 import { ArrowLeft } from 'lucide-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard.jsx';
@@ -286,6 +287,33 @@ function App() {
       window.history.replaceState(null, '', '#login');
     }
   }, [user, currentPage]);
+
+  // ── Startup verification ──
+  useEffect(() => {
+    try {
+      const currentUser = getCurrentUser();
+      console.log('[STARTUP] Current user object:', currentUser);
+      const currentEmail = getCurrentUserEmail();
+      console.log('[STARTUP] Current user email:', currentEmail);
+      console.log('[STARTUP] API endpoint:', API);
+      console.log('[STARTUP] Email-based endpoints should use:', `/api/user/by-email/${currentEmail}/...`);
+      
+      // Verify API endpoint returns data
+      fetch(`${API}/api/user/by-email/${currentEmail}`)
+        .then(res => {
+          if (res.ok) {
+            console.log('[STARTUP] API endpoint verification: SUCCESS');
+          } else {
+            console.warn('[STARTUP] API endpoint verification: FAILED with status', res.status);
+          }
+        })
+        .catch(err => {
+          console.warn('[STARTUP] API endpoint verification: ERROR', err);
+        });
+    } catch (err) {
+      console.warn('[STARTUP] User not logged in or email missing:', err.message);
+    }
+  }, []);
 
   // ── Form value setter ──
   const setValue = (key) => (event) => {
