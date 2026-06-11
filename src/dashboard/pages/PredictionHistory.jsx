@@ -36,7 +36,10 @@ export default function PredictionHistory() {
       return;
     }
     getPredictionsByEmail(user.email)
-      .then(setHistory)
+      .then((data) => {
+        console.log("History received:", data);
+        setHistory(data);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, refreshTick]);
@@ -45,6 +48,7 @@ export default function PredictionHistory() {
     () => [...new Set(history.map((h) => h.country).filter(Boolean))],
     [history],
   );
+  console.log("History state:", history);
 
   // Calculate summary statistics
   const stats = useMemo(() => {
@@ -77,6 +81,7 @@ export default function PredictionHistory() {
 
   const filtered = useMemo(() => {
     let rows = [...history];
+    console.log("PredictionHistory - raw history before filtering:", rows);
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       rows = rows.filter(
@@ -98,6 +103,7 @@ export default function PredictionHistory() {
     if (sortBy === "dna") rows.sort((a, b) => (b.dna_score ?? 0) - (a.dna_score ?? 0));
     else if (sortBy === "price") rows.sort((a, b) => (b.predicted_price ?? 0) - (a.predicted_price ?? 0));
     else rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    console.log("PredictionHistory - filtered rows:", rows);
     return rows;
   }, [history, searchQuery, countryFilter, dnaFilterMin, priceFilterMin, sortBy]);
 

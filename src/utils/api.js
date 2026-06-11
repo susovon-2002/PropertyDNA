@@ -1,4 +1,5 @@
 const BASE = import.meta.env.VITE_API_BASE_URL || "https://propertydna.onrender.com";
+console.log("BASE URL:", BASE);
 
 async function apiFetch(url, options = {}) {
   const res = await fetch(`${BASE}${url}`, {
@@ -61,8 +62,12 @@ export const getUserStats = (uid) => {
 
 // User - by email (new)
 export const getUserByEmail = async (email) => {
+  console.log("getUserByEmail - EMAIL:", email);
   try {
-    const data = await apiFetch(`/api/user/by-email/${email}`);
+    const url = `/api/user/by-email/${email}`;
+    console.log("getUserByEmail - REQUEST:", url);
+    const data = await apiFetch(url);
+    console.log("getUserByEmail - RESPONSE:", data);
     if (data && data.user) {
       localStorage.setItem(`user_${email}`, JSON.stringify(data.user));
     }
@@ -79,8 +84,12 @@ export const getUserByEmail = async (email) => {
 };
 
 export const getUserStatsByEmail = async (email) => {
+  console.log("getUserStatsByEmail - EMAIL:", email);
   try {
-    const data = await apiFetch(`/api/user/by-email/${email}/stats`);
+    const url = `/api/user/by-email/${email}/stats`;
+    console.log("getUserStatsByEmail - REQUEST:", url);
+    const data = await apiFetch(url);
+    console.log("getUserStatsByEmail - RESPONSE:", data);
     localStorage.setItem(`kpi_stats_${email}`, JSON.stringify(data));
     return data;
   } catch (err) {
@@ -136,8 +145,12 @@ async function syncLocalToRemote(email, type, localItems) {
 
 // Predictions - by email (new)
 export const getPredictionsByEmail = async (email) => {
+  console.log("getPredictionsByEmail - EMAIL:", email);
   try {
-    const serverData = await apiFetch(`/api/user/by-email/${email}/predictions`);
+    const url = `/api/user/by-email/${email}/predictions`;
+    console.log("getPredictionsByEmail - REQUEST:", url);
+    const serverData = await apiFetch(url);
+    console.log("getPredictionsByEmail - RESPONSE:", serverData);
     const localKey = `predictions_${email}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -157,6 +170,7 @@ export const getPredictionsByEmail = async (email) => {
 };
 
 export const savePredictionByEmail = async (email, body) => {
+  console.log("savePredictionByEmail - EMAIL:", email);
   const localKey = `predictions_${email}`;
   const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -180,10 +194,13 @@ export const savePredictionByEmail = async (email, body) => {
   localStorage.setItem(localKey, JSON.stringify([tempItem, ...localData]));
 
   try {
-    const res = await apiFetch(`/api/user/by-email/${email}/predictions`, {
+    const url = `/api/user/by-email/${email}/predictions`;
+    console.log("savePredictionByEmail - REQUEST:", url);
+    const res = await apiFetch(url, {
       method: "POST",
       body: JSON.stringify(body)
     });
+    console.log("savePredictionByEmail - RESPONSE:", res);
     const serverData = await apiFetch(`/api/user/by-email/${email}/predictions`);
     localStorage.setItem(localKey, JSON.stringify(serverData));
     return res;
@@ -223,8 +240,12 @@ export const deletePortfolio = (uid, id) => {
 
 // Portfolio - by email (new)
 export const getPortfolioByEmail = async (email) => {
+  console.log("getPortfolioByEmail - EMAIL:", email);
   try {
-    const serverData = await apiFetch(`/api/user/by-email/${email}/portfolio`);
+    const url = `/api/user/by-email/${email}/portfolio`;
+    console.log("getPortfolioByEmail - REQUEST:", url);
+    const serverData = await apiFetch(url);
+    console.log("getPortfolioByEmail - RESPONSE:", serverData);
     const localKey = `portfolio_${email}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -244,6 +265,7 @@ export const getPortfolioByEmail = async (email) => {
 };
 
 export const addPortfolioByEmail = async (email, body) => {
+  console.log("addPortfolioByEmail - EMAIL:", email);
   const localKey = `portfolio_${email}`;
   const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -256,10 +278,13 @@ export const addPortfolioByEmail = async (email, body) => {
   localStorage.setItem(localKey, JSON.stringify([tempItem, ...localData]));
 
   try {
-    const res = await apiFetch(`/api/user/by-email/${email}/portfolio`, {
+    const url = `/api/user/by-email/${email}/portfolio`;
+    console.log("addPortfolioByEmail - REQUEST:", url);
+    const res = await apiFetch(url, {
       method: "POST",
       body: JSON.stringify(body)
     });
+    console.log("addPortfolioByEmail - RESPONSE:", res);
     const serverData = await apiFetch(`/api/user/by-email/${email}/portfolio`);
     localStorage.setItem(localKey, JSON.stringify(serverData));
     return res;
@@ -312,8 +337,12 @@ export const deleteFavorite = (uid, id) => {
 
 // Favorites - by email (new)
 export const getFavoritesByEmail = async (email) => {
+  console.log("getFavoritesByEmail - EMAIL:", email);
   try {
-    const serverData = await apiFetch(`/api/user/by-email/${email}/favorites`);
+    const url = `/api/user/by-email/${email}/favorites`;
+    console.log("getFavoritesByEmail - REQUEST:", url);
+    const serverData = await apiFetch(url);
+    console.log("getFavoritesByEmail - RESPONSE:", serverData);
     const localKey = `favorites_${email}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -333,6 +362,7 @@ export const getFavoritesByEmail = async (email) => {
 };
 
 export const addFavoriteByEmail = async (email, body) => {
+  console.log("addFavoriteByEmail - EMAIL:", email);
   const localKey = `favorites_${email}`;
   const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -345,10 +375,13 @@ export const addFavoriteByEmail = async (email, body) => {
   localStorage.setItem(localKey, JSON.stringify([tempItem, ...localData]));
 
   try {
-    const res = await apiFetch(`/api/user/by-email/${email}/favorites`, {
+    const url = `/api/user/by-email/${email}/favorites`;
+    console.log("addFavoriteByEmail - REQUEST:", url);
+    const res = await apiFetch(url, {
       method: "POST",
       body: JSON.stringify(body)
     });
+    console.log("addFavoriteByEmail - RESPONSE:", res);
     const serverData = await apiFetch(`/api/user/by-email/${email}/favorites`);
     localStorage.setItem(localKey, JSON.stringify(serverData));
     return res;
@@ -401,8 +434,12 @@ export const deleteReport = (uid, id) => {
 
 // Reports - by email (new)
 export const getReportsByEmail = async (email) => {
+  console.log("getReportsByEmail - EMAIL:", email);
   try {
-    const serverData = await apiFetch(`/api/user/by-email/${email}/reports`);
+    const url = `/api/user/by-email/${email}/reports`;
+    console.log("getReportsByEmail - REQUEST:", url);
+    const serverData = await apiFetch(url);
+    console.log("getReportsByEmail - RESPONSE:", serverData);
     const localKey = `reports_${email}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -422,6 +459,7 @@ export const getReportsByEmail = async (email) => {
 };
 
 export const saveReportByEmail = async (email, body) => {
+  console.log("saveReportByEmail - EMAIL:", email);
   const localKey = `reports_${email}`;
   const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
 
@@ -434,10 +472,13 @@ export const saveReportByEmail = async (email, body) => {
   localStorage.setItem(localKey, JSON.stringify([tempItem, ...localData]));
 
   try {
-    const res = await apiFetch(`/api/user/by-email/${email}/reports`, {
+    const url = `/api/user/by-email/${email}/reports`;
+    console.log("saveReportByEmail - REQUEST:", url);
+    const res = await apiFetch(url, {
       method: "POST",
       body: JSON.stringify(body)
     });
+    console.log("saveReportByEmail - RESPONSE:", res);
     const serverData = await apiFetch(`/api/user/by-email/${email}/reports`);
     localStorage.setItem(localKey, JSON.stringify(serverData));
     return res;

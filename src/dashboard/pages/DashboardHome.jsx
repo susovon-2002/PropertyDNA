@@ -79,6 +79,10 @@ export default function DashboardHome() {
       getPortfolioByEmail(user.email),
     ])
       .then(([profileData, statsData, predictionData, portfolioData]) => {
+        console.log("DashboardHome - profile:", profileData);
+        console.log("DashboardHome - stats:", statsData);
+        console.log("DashboardHome - predictions:", predictionData);
+        console.log("DashboardHome - portfolio:", portfolioData);
         setProfile(profileData.user);
         setStats(statsData);
         setPredictions(predictionData);
@@ -210,12 +214,6 @@ export default function DashboardHome() {
             >
               <Trash2 size={14} /> Delete All Data
             </button>
-          </div>
-
-          <div className="hero-stats">
-            <div><span>Latest prediction</span><strong>{latestLabel}</strong></div>
-            <div><span>Member since</span><strong>{joinedDate}</strong></div>
-            <div><span>Countries analyzed</span><strong>{stats?.countries_analyzed ?? 0}</strong></div>
           </div>
         </div>
       </section>

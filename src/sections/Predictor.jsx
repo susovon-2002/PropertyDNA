@@ -47,8 +47,9 @@ export default function Predictor({
   onSaveProperty,
   onUploadCsv, isTraining
 }) {
-  const age = CURRENT_YEAR - Number(form.Year_Built || 2010);
+  const age = CURRENT_YEAR - Number(form.Year_Built || CURRENT_YEAR);
   const progress = Math.min(100, Math.max(8, age * 4));
+  console.log("Predictor - Year_Built:", form.Year_Built, "calculated age:", age, "predictedAge:", predictedAge);
   const anyLoading = loadingAge || loadingPrice || loadingDNA;
   const propertyName = String(form.Property_Name || '').trim();
   const hasAllPredictions = predictedAge !== null && predictedPrice !== null && predictedDNA !== null;
@@ -363,12 +364,12 @@ export default function Predictor({
                 </div>
                 <div className="ageDial" style={{ '--progress': `${progress}%` }}>
                   <div>
-                    <strong key={predictedAge}>{predictedAge}</strong>
+                    <strong key={age}>{age}</strong>
                     <b>Years</b>
                   </div>
                 </div>
                 <div className="resultFacts">
-                  <p><CalendarDays size={22} /> Built in: <b>{form.Year_Built || 2010}</b></p>
+                  <p><CalendarDays size={22} /> Built in: <b>{form.Year_Built || CURRENT_YEAR}</b></p>
                   <p><Clock3 size={22} /> Current Year: <b>{CURRENT_YEAR}</b></p>
                 </div>
               </div>

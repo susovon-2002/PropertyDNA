@@ -19,6 +19,7 @@ export default function CountryInsights() {
 
     getPredictionsByEmail(user.email)
       .then((preds) => {
+        console.log("CountryInsights - predictions received:", preds);
         const map = {};
         preds.forEach((p) => {
           const c = p.country || "Unknown";
@@ -33,6 +34,7 @@ export default function CountryInsights() {
           avg_dna: dnas.length ? dnas.reduce((a, b) => a + b, 0) / dnas.length : 0,
         }));
         result.sort((a, b) => b.predictions - a.predictions);
+        console.log("CountryInsights - insights state:", result);
         setInsights(result);
       })
       .catch(console.error)

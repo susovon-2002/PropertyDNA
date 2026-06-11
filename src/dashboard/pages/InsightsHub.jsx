@@ -67,6 +67,8 @@ export default function InsightsHub() {
     setLoading(true);
     Promise.all([getUserStatsByEmail(user.email), getPredictionsByEmail(user.email)])
       .then(([s, preds]) => {
+        console.log("InsightsHub - stats:", s);
+        console.log("InsightsHub - predictions:", preds);
         setStats(s);
         setPredictions(preds);
       })

@@ -27,6 +27,8 @@ export function UserProvider({ children }) {
           const parsed = JSON.parse(stored);
           // Backward compatibility: ignore id field if present
           const { id, ...userWithoutId } = parsed;
+          console.log("UserContext - user object:", userWithoutId);
+          console.log("UserContext - user.email:", userWithoutId.email);
           setUser(userWithoutId);
         } else {
           setUser(null);

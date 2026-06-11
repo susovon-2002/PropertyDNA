@@ -27,12 +27,16 @@ export default function Favorites() {
     setLoading(true);
     setError(null);
     getFavoritesByEmail(user.email)
-      .then(setFavorites)
+      .then((data) => {
+        console.log("Favorites - received:", data);
+        setFavorites(data);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [user, refreshTick]);
+  console.log("Favorites - state:", favorites);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

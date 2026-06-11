@@ -405,30 +405,17 @@ function App() {
     setLoadingAge(true);
     setActiveTab('age');
     try {
-      const res = await fetch(`${API}/api/predict/age`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rooms:      Number(form.Bedrooms),
-          size:       Number(form.House_Size_sqft),
-          material:   form.Construction_Material,
-          location:   form.Country,
-          renovation: Number(form.Renovation_Count) > 0 ? 'Yes' : 'No',
-        }),
+      // Calculate age locally from Year_Built instead of calling backend
+      const calculatedAge = Math.max(0, CURRENT_YEAR - Number(form.Year_Built || CURRENT_YEAR));
+      console.log("main.jsx handlePredictAge - calculated age from Year_Built:", form.Year_Built, "=", calculatedAge);
+      setPredictedAge(calculatedAge);
+      setIsAgeStale(false);
+      setIsPriceStale(true);
+      await savePredictionSnapshot({
+        predictedAgeValue: calculatedAge,
+        predictedPriceValue: predictedPrice?.value ?? 0,
+        predictedDNAValue: predictedDNA ?? 0,
       });
-      const data = await res.json();
-      if (res.ok) {
-        const nextAge = data.predictedAge;
-        setPredictedAge(nextAge);
-        setForm(cur => ({ ...cur, Year_Built: CURRENT_YEAR - nextAge }));
-        setIsAgeStale(false);
-        setIsPriceStale(true);
-        await savePredictionSnapshot({
-          predictedAgeValue: nextAge,
-          predictedPriceValue: predictedPrice?.value ?? 0,
-          predictedDNAValue: predictedDNA ?? 0,
-        });
-      } else throw new Error(data.detail);
     } catch {
       setPredictedAge(age);
       setIsAgeStale(false);

@@ -29,12 +29,16 @@ export default function SavedReports() {
     setLoading(true);
     setError(null);
     getReportsByEmail(user.email)
-      .then(setReports)
+      .then((data) => {
+        console.log("SavedReports - received:", data);
+        setReports(data);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [user, refreshTick]);
+  console.log("SavedReports - state:", reports);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
